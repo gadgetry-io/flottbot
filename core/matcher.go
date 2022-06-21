@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"html"
 	"html/template"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -267,6 +268,23 @@ func isValidHitChatRule(message *models.Message, rule models.Rule, processedInpu
 		if len(rule.Args) > 0 && requiredArgs > len(args) {
 			message.Output = fmt.Sprintf("you might be missing an argument or two - this is what i'm looking for\n```%s```", rule.HelpText)
 			return false
+		}
+
+		// Determine if rule.Respond is a valid regex expression
+		if strings.HasPrefix(rule.Respond, "/") && strings.HasSuffix(rule.Respond, "/") {
+			r, err := regexp.Compile(strings.Trim(rule.Respond, "/"))
+			if err != nil {
+				log.Error().Msgf("could not compile regex for rule %s", rule.Name)
+				return false
+			}
+
+			regexpArgs := r.FindStringSubmatch(message.Input)
+
+			for index, name := range r.SubexpNames() {
+				if index != 0 && name != "" {
+					message.Vars[name] = regexpArgs[index]
+				}
+			}
 		}
 
 		// Go through the supplied args and make them available as variables

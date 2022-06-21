@@ -1178,3 +1178,58 @@ func Test_matcherLoop(t *testing.T) {
 		})
 	}
 }
+
+func Test_regexMatch(t *testing.T) {
+	type args struct {
+		message    models.Message
+		outputMsgs chan<- models.Message
+		rules      map[string]models.Rule
+		hitRule    chan<- models.Rule
+		bot        *models.Bot
+	}
+
+	testBot := new(models.Bot)
+
+	testMessage4 := models.Message{
+		Service:      models.MsgServiceChat,
+		Input:        "deploy flottbot@v0.0.1 to qa",
+		Attributes:   make(map[string]string),
+		BotMentioned: true,
+		Vars:         make(map[string]string),
+	}
+	testRules4 := make(map[string]models.Rule)
+	testRule4 := models.Rule{
+		Name:          "testmatch",
+		Active:        true,
+		Respond:       "/deploy (?P<application>.*)@(?P<version>.*) to (?P<environment>.*)/",
+		Args:          []string{},
+		IncludeInHelp: true,
+		HelpText:      "hello <application>@<version> to <environment>",
+		FormatOutput:  "deploying ${application} at version ${version} to environment ${environment}",
+	}
+	testRules4["test"] = testRule4
+
+	tests := []struct {
+		name           string
+		args           args
+		expectedOutput string
+	}{
+		{"Regex match, no actions", args{message: testMessage4, rules: testRules4, bot: testBot}, "deploying flottbot at version v0.0.1 to environment qa"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			testOutput := make(chan models.Message, 1)
+			testHitRule := make(chan models.Rule, 1)
+
+			tt.args.outputMsgs = testOutput
+			tt.args.hitRule = testHitRule
+
+			matcherLoop(tt.args.message, tt.args.outputMsgs, tt.args.rules, tt.args.hitRule, tt.args.bot)
+
+			output := <-testOutput
+			if output.Output != tt.expectedOutput {
+				t.Errorf("Message expected to be: %s, but got: %s", tt.expectedOutput, output.Output)
+			}
+		})
+	}
+}
