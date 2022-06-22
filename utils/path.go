@@ -19,13 +19,12 @@ var (
 
 // PathExists helps determine whether a path exists.
 func PathExists(p string) (string, error) {
-	ex, err := os.Executable()
+	ex, err := os.Getwd()
 	if err != nil {
 		return "", errCurrPath
 	}
 
-	exPath := filepath.Dir(ex)
-	fullPath := filepath.Join(exPath, p)
+	fullPath := filepath.Join(ex, p)
 
 	if _, err := os.Stat(fullPath); err != nil {
 		if os.IsNotExist(err) {

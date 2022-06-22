@@ -17,15 +17,14 @@ func TestPathExists(t *testing.T) {
 		p string
 	}
 
-	ex, err := os.Executable()
+	ex, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	exPath := filepath.Dir(ex)
-	t.Log(exPath)
+	t.Log(ex)
 
-	dir, _ := ioutil.TempDir(exPath, "pathtest")
+	dir, _ := ioutil.TempDir(ex, "pathtest")
 	defer os.RemoveAll(dir)
 
 	wantString := dir
