@@ -87,7 +87,7 @@ func TestScriptExecWithRegex(t *testing.T) {
 		wantErr    bool
 		wantRegexp *regexp.Regexp
 	}{
-		{"Script does not exist", args{args: cmdNotFound, msg: &simpleScriptMessage}, &models.ScriptResponse{Status: 2}, true, regexp.MustCompile(`No such file`)},
+		{"Script does not exist", args{args: cmdNotFound, msg: &simpleScriptMessage}, &models.ScriptResponse{Status: 2}, true, regexp.MustCompile(`No such file|Can't open`)},
 	}
 
 	for _, tt := range tests {
