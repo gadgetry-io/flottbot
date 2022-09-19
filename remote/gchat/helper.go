@@ -12,6 +12,7 @@ import (
 	"cloud.google.com/go/pubsub"
 	"google.golang.org/api/chat/v1"
 
+	"github.com/rs/zerolog/log"
 	"github.com/target/flottbot/models"
 )
 
@@ -48,6 +49,24 @@ func HandleRemoteOutput(message models.Message, bot *models.Bot) {
 
 	// Send messages to Google Chat
 	go c.Send(message, bot)
+}
+
+func IsMemberOfGroup(currentUserID string, userGroups []string, bot *models.Bot) (bool, error) {
+
+	if bot.GoogleChatDomainAdmin == "" {
+		errmsg := "allow_usergroups not enabled. Please configure google_chat_domain_admin"
+		log.Warn().Msg(errmsg)
+		return false, fmt.Errorf(errmsg)
+	}
+	c := &Client{
+		Credentials:    bot.GoogleChatCredentials,
+		ProjectID:      bot.GoogleChatProjectID,
+		SubscriptionID: bot.GoogleChatSubscriptionID,
+		DomainAdmin:    bot.GoogleChatDomainAdmin,
+	}
+
+	// check membership
+	return c.isMemberOfGroup(currentUserID, userGroups, bot)
 }
 
 // toMessage converts a PubSub message to Flottbot Message.
