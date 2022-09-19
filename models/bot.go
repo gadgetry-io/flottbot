@@ -28,6 +28,7 @@ type Bot struct {
 	GoogleChatProjectID           string            `mapstructure:"google_chat_project_id"`
 	GoogleChatSubscriptionID      string            `mapstructure:"google_chat_subscription_id"`
 	GoogleChatCredentials         string            `mapstructure:"google_chat_credentials"`
+	GoogleChatDomainAdmin         string            `mapstructure:"google_chat_domain_admin"`
 	TelegramToken                 string            `mapstructure:"telegram_token"`
 	Users                         map[string]string `mapstructure:"slack_users"`
 	UserGroups                    map[string]string `mapstructure:"slack_usergroups"`

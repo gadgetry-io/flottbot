@@ -34,7 +34,3 @@ func getMessageType(event chat.DeprecatedEvent) (models.MessageType, error) {
 
 	return msgType, nil
 }
-
-func IsMemberOfGroup(currentUserID string, userGroups []string, bot *models.Bot) (bool, error) {
-	return false, nil
-}

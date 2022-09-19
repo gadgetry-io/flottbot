@@ -39,4 +39,12 @@ func Configure(bot *models.Bot) {
 	}
 
 	bot.GoogleChatSubscriptionID = subscriptionID
+
+	// google_chat_domain_admin
+	domainAdmin, err := utils.Substitute(bot.GoogleChatDomainAdmin, emptyMap)
+	if err != nil {
+		log.Error().Msgf("could not set 'google_chat_domain_admin': %s", err.Error())
+	}
+
+	bot.GoogleChatDomainAdmin = domainAdmin
 }
