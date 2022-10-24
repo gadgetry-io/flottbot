@@ -69,3 +69,4 @@ _vendor*
 
 ### GoReleaser ###
 dist/
+config

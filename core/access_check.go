@@ -2,7 +2,7 @@
 //
 // Use of this source code is governed by the LICENSE file in this repository.
 
-package utils
+package core
 
 import (
 	"strings"
@@ -12,6 +12,7 @@ import (
 	"github.com/slack-go/slack"
 
 	"github.com/target/flottbot/models"
+	"github.com/target/flottbot/remote/gchat"
 )
 
 // CanTrigger ensures the user is allowed to use the respective rule.
@@ -156,6 +157,8 @@ func isMemberOfGroup(currentUserID string, userGroups []string, bot *models.Bot)
 		}
 
 		return false, nil
+	case "google_chat":
+		return gchat.IsMemberOfGroup(currentUserID, userGroups, bot)
 	default:
 		log.Error().Msgf("chat application %#q is not supported", capp)
 		return false, nil
