@@ -5,13 +5,9 @@
 package gchat
 
 import (
-	"encoding/json"
 	"fmt"
-	"strings"
 
-	"cloud.google.com/go/pubsub"
-	"google.golang.org/api/chat/v1"
-
+	"github.com/rs/zerolog/log"
 	"github.com/target/flottbot/models"
 )
 
@@ -28,11 +24,8 @@ type DomainEvent struct {
 
 // HandleOutput handles input messages for this remote.
 func HandleRemoteInput(inputMsgs chan<- models.Message, rules map[string]models.Rule, bot *models.Bot) {
-	c := &Client{
-		Credentials:    bot.GoogleChatCredentials,
-		ProjectID:      bot.GoogleChatProjectID,
-		SubscriptionID: bot.GoogleChatSubscriptionID,
-	}
+
+	c := NewClient(bot)
 
 	// Read messages from Google Chat
 	go c.Read(inputMsgs, rules, bot)
@@ -40,69 +33,23 @@ func HandleRemoteInput(inputMsgs chan<- models.Message, rules map[string]models.
 
 // HandleRemoteOutput handles output messages for this remote.
 func HandleRemoteOutput(message models.Message, bot *models.Bot) {
-	c := &Client{
-		Credentials:    bot.GoogleChatCredentials,
-		ProjectID:      bot.GoogleChatProjectID,
-		SubscriptionID: bot.GoogleChatSubscriptionID,
-	}
+
+	c := NewClient(bot)
 
 	// Send messages to Google Chat
 	go c.Send(message, bot)
 }
 
-// toMessage converts a PubSub message to Flottbot Message.
-func toMessage(m *pubsub.Message) (models.Message, error) {
-	message := models.NewMessage()
+func IsMemberOfGroup(currentUserID string, userGroups []string, bot *models.Bot) (bool, error) {
 
-	var event chat.DeprecatedEvent
-
-	err := json.Unmarshal(m.Data, &event)
-	if err != nil {
-		return message, fmt.Errorf("google_chat was unable to parse event %s: %w", m.ID, err)
+	if bot.GoogleChatDomainAdmin == "" {
+		errmsg := "allow_usergroups not enabled. Please configure google_chat_domain_admin"
+		log.Warn().Msg(errmsg)
+		return false, fmt.Errorf(errmsg)
 	}
 
-	msgType, err := getMessageType(event)
-	if err != nil {
-		return message, err
-	}
+	c := NewClient(bot, WithAdminSDK())
 
-	message.Type = msgType
-	message.Timestamp = event.EventTime
-
-	if event.Type == "MESSAGE" {
-		message.Input = strings.TrimPrefix(event.Message.ArgumentText, " ")
-		message.ID = event.Message.Name
-		message.Service = models.MsgServiceChat
-		message.ChannelName = event.Space.DisplayName
-		message.ChannelID = event.Space.Name
-		message.BotMentioned = true // Google Chat only supports @bot mentions
-		message.DirectMessageOnly = event.Space.SingleUserBotDm
-
-		if event.Space.Threaded {
-			message.ThreadID = event.Message.Thread.Name
-			message.ThreadTimestamp = event.EventTime
-		}
-
-		// make channel variables available
-		message.Vars["_channel.name"] = message.ChannelName // will be empty if it came via DM
-		message.Vars["_channel.id"] = message.ChannelID
-		message.Vars["_thread.id"] = message.ThreadID
-
-		// make timestamp information available
-		message.Vars["_source.timestamp"] = event.EventTime
-	}
-
-	if event.User != nil {
-		message.Vars["_user.name"] = event.User.DisplayName
-		message.Vars["_user.id"] = event.User.Name
-		message.Vars["_user.displayname"] = event.User.DisplayName
-
-		// Try parsing as a domain message to get user email
-		var domainEvent DomainEvent
-		if err := json.Unmarshal(m.Data, &domainEvent); err == nil {
-			message.Vars["_user.id"] = domainEvent.User.Email
-		}
-	}
-
-	return message, nil
+	// check membership
+	return c.isMemberOfGroup(currentUserID, userGroups, bot)
 }
