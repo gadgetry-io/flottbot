@@ -7,14 +7,12 @@ package gchat
 import (
 	"fmt"
 
-	"google.golang.org/api/chat/v1"
-
 	"github.com/target/flottbot/models"
 )
 
 // getMessageType converts the type returned for a
 // Google Chat message to an internal, equivalent type.
-func getMessageType(event chat.DeprecatedEvent) (models.MessageType, error) {
+func getMessageType(event Message) (models.MessageType, error) {
 	msgType := models.MsgTypeUnknown
 
 	switch event.Type {
