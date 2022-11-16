@@ -313,6 +313,7 @@ func doRuleActions(message models.Message, outputMsgs chan<- models.Message, rul
 	}
 
 	// Deal with the actions associated with the rule asynchronously
+ActionsLoop:
 	for _, action := range rule.Actions {
 		var err error
 
@@ -325,6 +326,9 @@ func doRuleActions(message models.Message, outputMsgs chan<- models.Message, rul
 		case "exec":
 			log.Debug().Msgf("executing action %#q...", action.Name)
 			err = handleExec(action, &message)
+			if err != nil {
+				break ActionsLoop
+			}
 		// Normal message/log actions
 		case "message", "log":
 			log.Debug().Msgf("executing action %#q...", action.Name)
@@ -445,6 +449,10 @@ func handleExec(action models.Action, msg *models.Message) error {
 
 	if err != nil {
 		return err
+	}
+
+	if resp.Status != 0 {
+		return fmt.Errorf("script returned non-zero status code: %d", resp.Status)
 	}
 
 	return nil
